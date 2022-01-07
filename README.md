@@ -27,4 +27,4 @@ stefan.chen@duke.edu
 
 Office hours: TBD
 
-Student: Jimenez-Petchumrus
+Student: Narissa Jimenez-Petchumrus
