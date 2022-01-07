@@ -26,3 +26,5 @@ Stefan Chen
 stefan.chen@duke.edu
 
 Office hours: TBD
+
+Student: Jimenez-Petchumrus
