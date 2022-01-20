@@ -32,10 +32,11 @@ Formatting of dates in R:
 today <- Sys.Date()
 format(today, format = "%B")
 format(today, format = "%y")
-#format(today, format = "")
-#format(today, format = "")
+format(today, format = "%A")
+format(today, format = "%a")
 
-#as.Date()
+as.Date(today, "%m/%d/%Y")
+
 ```
 
 
