@@ -315,3 +315,35 @@ print(adf.test(inflow_data_yearly, alternative = "stationary"))
 
 Run the stationarity tests for the other variables HP2, HP3, ...
 
+```{r}
+iHP=7
+
+#Since I have seasonal data I cannot use the simple MannKendall()
+#another example of functions that need a ts object
+SMKtest <- SeasonalMannKendall(ts_inflow_data[,iHP])
+print("Results for Seasonal Mann Kendall /n")
+print(summary(SMKtest))
+
+#Use yearly date to run Mann Kendall
+print("Results of Mann Kendall on average yearly series")
+print(summary(MannKendall(inflow_data_yearly)))
+
+#Deterministic trend with Spearman Correlation Test
+print("Results from Spearman Correlation")
+sp_rho=cor(inflow_data_yearly,my_year,method="spearman")
+print(sp_rho)
+
+#with cor.test you can get test statistics
+sp_rho=cor.test(inflow_data_yearly,my_year,method="spearman")
+print(sp_rho)
+
+#Null hypothesis is that data has a unit root
+print("Results for ADF test/n")
+print(adf.test(ts_inflow_data[,iHP],alternative = "stationary"))
+
+#Now let's try the yearly data
+print("Results for ADF test on yearly data/n")
+print(adf.test(inflow_data_yearly, alternative = "stationary"))
+
+
+```
