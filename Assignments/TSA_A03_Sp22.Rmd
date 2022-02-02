@@ -1,7 +1,7 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2022"
 subtitle: "Assignment 3 - Due date 02/08/22"
-author: "Student Name"
+author: "Narissa Jimenez-Petchumrus"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -29,8 +29,18 @@ Consider the same data you used for A2 from the spreadsheet "Table_10.1_Renewabl
 
 R packages needed for this assignment:"forecast","tseries", and "Kendall". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.\\
 
-```{r}
+```{r load packages, include=FALSE}
 #Load/install required package here
+library(forecast)
+library(tseries)
+library(Kendall)
+library(readxl)
+
+
+```
+
+```{r clear global environment, include=FALSE}
+rm(list=ls()) ##This code here removes all the objects from your Global Environment.
 
 ```
 
@@ -38,6 +48,11 @@ R packages needed for this assignment:"forecast","tseries", and "Kendall". Insta
 
 ### Q1
 Create a plot window that has one row and three columns. And then for each object on your data frame, fill the plot window with time series plot, ACF and PACF. You may use the some code form A2, but I want all three plots on the same window this time. (Hint: use par() function)
+
+```{r load data}
+energy_data <- read_excel("./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", skip = 12, sheet=1, col_names = FALSE) 
+
+```
 
 ### Q2
 From the plot in Q1, do the series Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption appear to have a trend? If yes, what kind of trend?
