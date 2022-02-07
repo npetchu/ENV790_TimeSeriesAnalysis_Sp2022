@@ -39,7 +39,7 @@ Let's continue working with our inflow data for reservoirs in Brazil.
 ```{r}
 
 #Importing time series data from text file#
-raw_inflow_data <- read.table(file="../Data/inflowtimeseries.txt",header=FALSE,skip=0)
+raw_inflow_data <- read.table(file=paste(getwd(),"/Data/inflowtimeseries.txt", sep=''),header=FALSE,skip=0)
 
 #Trim the table to include only columns you need
 nhydro <- ncol(raw_inflow_data)-2
@@ -157,6 +157,14 @@ beta0=as.numeric(linear_trend_model$coefficients[1])  #first coefficient is the 
 beta1=as.numeric(linear_trend_model$coefficients[2])  #second coefficient is the slope or beta1
 
 #Let's plot the time series with its trend line
+test<-energy_data2 %>% as.data.frame()
+
+ggplot(test, aes(x=Month, y=test[,2])) +
+            geom_line(color="blue") +
+            #geom_abline(intercept = beta0, slope = beta1, color="red")
+            geom_smooth(color="red",method="lm") 
+
+
 ggplot(inflow_data, aes(x=my_date, y=inflow_data[,(1+iHP)])) +
             geom_line(color="blue") +
             ylab(paste0("Inflow ",colnames(inflow_data)[(1+iHP)],sep="")) +

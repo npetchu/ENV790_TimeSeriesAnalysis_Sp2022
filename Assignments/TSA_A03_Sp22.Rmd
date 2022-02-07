@@ -35,7 +35,9 @@ library(forecast)
 library(tseries)
 library(Kendall)
 library(readxl)
-
+library(lubridate)
+library(stringr)
+library(ggplot2)
 
 ```
 
@@ -50,18 +52,176 @@ rm(list=ls()) ##This code here removes all the objects from your Global Environm
 Create a plot window that has one row and three columns. And then for each object on your data frame, fill the plot window with time series plot, ACF and PACF. You may use the some code form A2, but I want all three plots on the same window this time. (Hint: use par() function)
 
 ```{r load data}
-energy_data <- read_excel("./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", skip = 12, sheet=1, col_names = FALSE) 
+energy_data <- read_xlsx(path="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",skip = 12, sheet="Monthly Data",col_names=FALSE) 
+energy_data
+
+colnames(energy_data) <- read_col_names
+head(energy_data)
+
+nobs <- nrow(energy_data) 
+
+sapply(energy_data, class)
+
+#create data frame with date and 3 energy types
+energy_data2 <- energy_data[, c(1,4:6)] %>% as.data.frame()
+energy_data2
+sapply(energy_data2, class)
+
+#change column names
+names(energy_data2) <- c('Month','Total_Biomass_Energy_Production','Total_Renewable_Energy_Production','Hydroelectric_Power_Consumption')
+head(energy_data2)
+
+#Create time series object
+ts_energy <- ts(energy_data[4:6]) # TODO: add stuff
+ts_energy %>% head()
+
 
 ```
+
+```{r ACF PACF}
+#Plot ACF and PACF
+for(i in 1:ts_energy){
+  par(mfrow=c(1,2))  #place plot side by side
+  Acf(ts_energy[,i],lag.max=40,main=paste("ACF of EIA Data",i,sep="")) 
+  Pacf(ts_energy[,i],lag.max=40,main=paste("PACF of EIA Data",i,sep=""))
+}
+
+```
+
+```{r plots}
+#using package ggplot2
+
+ggplot(energy_data2, aes(x=Month, y=Trillion_Btus)) +
+            geom_line(aes(y=Total_Renewable_Energy_Production,col="Total_Renewable_Energy_Production")) +
+            geom_line(aes(y=Hydroelectric_Power_Consumption,col="Hydroelectric_Power_Consumption"))+
+            geom_line(aes(y=Total_Biomass_Energy_Production,col="Total_Biomass_Energy_Production")) + 
+            xlab("Time") +
+            labs(title = "EIA Dec 2021 Energy Review", color="Energy Types")
+
+
+```
+
 
 ### Q2
 From the plot in Q1, do the series Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption appear to have a trend? If yes, what kind of trend?
 
+
+
 ### Q3
 Use the *lm()* function to fit a linear trend to the three time series. Ask R to print the summary of the regression. Interpret the regression output, i.e., slope and intercept. Save the regression coefficients for further analysis.
- 
+
+
+```{r Biomass regression}
+
+#Create vector t
+t <- c(1:nobs)
+
+#Fit a linear trend to TS
+lm_model=lm(Total_Biomass_Energy_Production~t,data=energy_data2)
+summary(lm_model)
+beta0=as.numeric(lm_model$coefficients[1])  #first coefficient is the intercept term or beta0
+beta1=as.numeric(lm_model$coefficients[2])  #second coefficient is the slope or beta1
+
+#Plot the time series with its trend line
+ggplot(energy_data2, aes(x=Month, y=Total_Biomass_Energy_Production)) +
+            geom_line(color="blue") +
+            ylab(paste0("Trillion Btus")) +
+            #geom_abline(intercept = beta0, slope = beta1, color="red") +
+            geom_smooth(color="red",method="lm") +
+   geom_line(aes(y=detrend_inflow_data), col="green")+
+            ggtitle("Total Biomass Energy Production") +
+            xlab("Time")
+
+```
+
+```{r renewable regression}
+#Fit a linear trend to TS
+lm_model2=lm(Total_Renewable_Energy_Production~t,data=energy_data2)
+summary(lm_model2)
+beta02=as.numeric(lm_model2$coefficients[1])  #first coefficient is the intercept term or beta0
+beta12=as.numeric(lm_model2$coefficients[2])  #second coefficient is the slope or beta1
+
+
+#Plot the time series with its trend line
+ggplot(energy_data2, aes(x=Month, y=Total_Renewable_Energy_Production)) +
+            geom_line(color="green") +
+            ylab(paste0("Trillion Btus")) +
+            #geom_abline(intercept = beta02, slope = beta12, color="red") +
+            geom_smooth(color="red",method="lm") +
+            ggtitle("Total Renewable Energy Production") +
+            xlab("Time")
+
+```
+
+```{r hydro regression}
+#Fit a linear trend to TS
+lm_model3=lm(Hydroelectric_Power_Consumption~t,data=energy_data2)
+summary(lm_model3)
+beta03=as.numeric(lm_model3$coefficients[1])  #first coefficient is the intercept term or beta0
+beta13=as.numeric(lm_model3$coefficients[2])  #second coefficient is the slope or beta1
+
+
+#Plot the time series with its trend line
+ggplot(energy_data2, aes(x=Month, y=Hydroelectric_Power_Consumption)) +
+            geom_line(color="black") +
+            ylab(paste0("Trillion Btus")) +
+            #geom_abline(intercept = beta03, slope = beta13, color="red") +
+            geom_smooth(color="red",method="lm") +
+            ggtitle("Total Hydroelectric Power Consumption") +
+            xlab("Time")
+
+```
+
 ### Q4
 Use the regression coefficients from Q3 to detrend the series. Plot the detrended series and compare with the plots from Q1. What happened? Did anything change?
+
+```{r detrend biomass}
+#remove the trend from series
+detrend_biomass_data <- energy_data2[,2]-(beta0+beta1*t)
+     
+#Understanding what we did
+ggplot(energy_data2, aes(x=Month, y=Total_Biomass_Energy_Production)) +
+            geom_line(color="blue") +
+            ylab("Trillion Btus") +
+            geom_abline(intercept = beta0, slope = beta1, color="red") +
+            geom_smooth(color="red",method="lm") +
+            geom_line(aes(y=detrend_biomass_data), col="green") +
+            geom_smooth(aes(y=detrend_biomass_data),color="orange",method="lm")
+
+            
+```
+
+```{r detrend renewables}
+#remove the trend from series
+detrend_renewables_data <- energy_data2[,3]-(beta02+beta12*t)
+
+#Understanding what we did
+ggplot(energy_data2, aes(x=Month, y=Total_Renewable_Energy_Production)) +
+            geom_line(color="blue") +
+            ylab(paste0("Trillion Btus")) +
+            geom_abline(intercept = beta0, slope = beta1, color="red") +
+            geom_smooth(color="red",method="lm") +
+            geom_line(aes(y=detrend_renewables_data), col="green") +
+            geom_smooth(aes(y=detrend_renewables_data),color="orange",method="lm") 
+
+
+```
+
+```{r detrend hydro}
+#remove the trend from series
+detrend_hydro_data <- energy_data2[,4]-(beta03+beta13*t)
+
+#Understanding what we did
+ggplot(energy_data2, aes(x=Month, y=energy_data2[,4])) +
+            geom_line(color="blue") +
+            ylab("Trillion Btus") +
+            geom_abline(intercept = beta0, slope = beta1, color="red") +
+            geom_smooth(color="red",method="lm") +
+            geom_line(aes(y=detrend_hydro_data), col="green") +
+            geom_smooth(aes(y=detrend_hydro_data),color="orange",method="lm") 
+
+
+```
 
 ### Q5
 Plot ACF and PACF for the detrended series and compare with the plots from Q1. Did the plots change? How?
@@ -72,6 +232,11 @@ Set aside the detrended series and consider the original series again from Q1 to
 
 ### Q6
 Do the series seem to have a seasonal trend? Which serie/series? Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) to this/these time series. Ask R to print the summary of the regression. Interpret the regression output. Save the regression coefficients for further analysis.
+
+```{r}
+
+
+```
 
 ### Q7
 Use the regression coefficients from Q6 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
