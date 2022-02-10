@@ -5,7 +5,7 @@ author: "Narissa Jimenez-Petchumrus"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
   
 ## Directions
@@ -41,27 +41,31 @@ library(ggplot2)
 
 ```
 
-```{r clear global environment, include=FALSE}
-rm(list=ls()) ##This code here removes all the objects from your Global Environment.
-
-```
 
 ##Trend Component
 
 ### Q1
 Create a plot window that has one row and three columns. And then for each object on your data frame, fill the plot window with time series plot, ACF and PACF. You may use the some code form A2, but I want all three plots on the same window this time. (Hint: use par() function)
 
-```{r load data}
+```{r load data, include=FALSE}
 energy_data <- read_xlsx(path="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",skip = 12, sheet="Monthly Data",col_names=FALSE) 
 energy_data
+```
 
-colnames(energy_data) <- read_col_names
+```{r create data frame, include=FALSE}
+
+colnames(energy_data)=c("Month","Total_Biomass_Energy_Production","Total_Renewable_Energy_Production", "Hydroelectric_Power_Consumption")
 head(energy_data)
 
 nobs <- nrow(energy_data) 
 
+
+
 sapply(energy_data, class)
 
+```
+
+```{r create time series object, include=FALSE}
 #create data frame with date and 3 energy types
 energy_data2 <- energy_data[, c(1,4:6)] %>% as.data.frame()
 energy_data2
@@ -72,23 +76,31 @@ names(energy_data2) <- c('Month','Total_Biomass_Energy_Production','Total_Renewa
 head(energy_data2)
 
 #Create time series object
-ts_energy <- ts(energy_data[4:6]) # TODO: add stuff
+ts_energy <- ts(energy_data[4:6], frequency=12)
 ts_energy %>% head()
 
+ntype<-ncol(energy_data2)-1
 
 ```
 
-```{r ACF PACF}
+```{r acf pacf, echo=FALSE, warning=FALSE, message=FALSE}
 #Plot ACF and PACF
-for(i in 1:ts_energy){
-  par(mfrow=c(1,2))  #place plot side by side
-  Acf(ts_energy[,i],lag.max=40,main=paste("ACF of EIA Data",i,sep="")) 
-  Pacf(ts_energy[,i],lag.max=40,main=paste("PACF of EIA Data",i,sep=""))
+
+for(i in 1:ntype){
+  par(mfrow=c(1,3))  #place plot side by side
+  
+  plot(ts_energy[,i], ylab="Generation in Trillion Btu", main=paste0(colnames(energy_data)[(1+i)]))
+  abline(h=mean(ts_energy[,i]),col="red")    
+  
+  Acf(ts_energy[,i],lag.max=40,main=paste0(colnames(energy_data)[(1+i)])) 
+  Pacf(ts_energy[,i],lag.max=40,main=paste0(colnames(energy_data)[(1+i)]))
+  
+  
 }
 
 ```
 
-```{r plots}
+```{r plots, echo=FALSE, warning=FALSE, message=FALSE}
 #using package ggplot2
 
 ggplot(energy_data2, aes(x=Month, y=Trillion_Btus)) +
@@ -106,12 +118,21 @@ ggplot(energy_data2, aes(x=Month, y=Trillion_Btus)) +
 From the plot in Q1, do the series Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption appear to have a trend? If yes, what kind of trend?
 
 
+From the plots in Q1, it appears that both biomass and renewable energy production both are upward trending over time. Hydroelectric power consumption doesn't appear to have a trend. 
+
 
 ### Q3
 Use the *lm()* function to fit a linear trend to the three time series. Ask R to print the summary of the regression. Interpret the regression output, i.e., slope and intercept. Save the regression coefficients for further analysis.
 
 
-```{r Biomass regression}
+For Biomass, the intercept = 134.78 and the slope = 0.474. This shows that approximately for every month, there is an increase of 0.474 trillion Btus in Biomass energy generation. 
+
+For Hydroelectric, the intercept = 259.18 and the slope = -0.079. This shows that approximately for every month, there is a decrease of 0.079 trillion Btus in Hydro energy consumption. 
+
+For Renewables, the intercept = 323.18 and the slope = 0.88. This shows that approximately for every month, there is a decrease of 0.88 trillion Btus in Renewable energy generation. 
+
+
+```{r Biomass regression, echo=FALSE, warning=FALSE, message=FALSE}
 
 #Create vector t
 t <- c(1:nobs)
@@ -128,13 +149,12 @@ ggplot(energy_data2, aes(x=Month, y=Total_Biomass_Energy_Production)) +
             ylab(paste0("Trillion Btus")) +
             #geom_abline(intercept = beta0, slope = beta1, color="red") +
             geom_smooth(color="red",method="lm") +
-   geom_line(aes(y=detrend_inflow_data), col="green")+
             ggtitle("Total Biomass Energy Production") +
             xlab("Time")
 
 ```
 
-```{r renewable regression}
+```{r renewable regression, echo=FALSE, warning=FALSE, message=FALSE}
 #Fit a linear trend to TS
 lm_model2=lm(Total_Renewable_Energy_Production~t,data=energy_data2)
 summary(lm_model2)
@@ -153,7 +173,7 @@ ggplot(energy_data2, aes(x=Month, y=Total_Renewable_Energy_Production)) +
 
 ```
 
-```{r hydro regression}
+```{r hydro regression, echo=FALSE, warning=FALSE, message=FALSE}
 #Fit a linear trend to TS
 lm_model3=lm(Hydroelectric_Power_Consumption~t,data=energy_data2)
 summary(lm_model3)
@@ -175,7 +195,15 @@ ggplot(energy_data2, aes(x=Month, y=Hydroelectric_Power_Consumption)) +
 ### Q4
 Use the regression coefficients from Q3 to detrend the series. Plot the detrended series and compare with the plots from Q1. What happened? Did anything change?
 
-```{r detrend biomass}
+
+Regarding biomass, the detrended series isn't showing that dramatic of an upward trend over time. In addition the mean of the detrended series is approximately at y=0. It also appears easier to see seasonality if there is any.
+
+Regarding renewables, the detrended series is also not showing that dramatic of an upward trend over time. The mean of this detrended series is also at approximately y=0. It also appears easier to see seasonality if there is any.
+
+Regarding hydroelectric, the detrended series went from a slightly negative trend (based on just staring at the graph though) to showing no potential trend (thus detrended but again this is by only looking at the graph). The mean of this detrended series is also approximately at y=0. It also appears easier to see seasonality if there is any.
+
+
+```{r detrend biomass, echo=FALSE, warning=FALSE, message=FALSE}
 #remove the trend from series
 detrend_biomass_data <- energy_data2[,2]-(beta0+beta1*t)
      
@@ -191,7 +219,7 @@ ggplot(energy_data2, aes(x=Month, y=Total_Biomass_Energy_Production)) +
             
 ```
 
-```{r detrend renewables}
+```{r detrend renewables, echo=FALSE, warning=FALSE, message=FALSE}
 #remove the trend from series
 detrend_renewables_data <- energy_data2[,3]-(beta02+beta12*t)
 
@@ -207,7 +235,7 @@ ggplot(energy_data2, aes(x=Month, y=Total_Renewable_Energy_Production)) +
 
 ```
 
-```{r detrend hydro}
+```{r detrend hydro, echo=FALSE, warning=FALSE, message=FALSE}
 #remove the trend from series
 detrend_hydro_data <- energy_data2[,4]-(beta03+beta13*t)
 
@@ -226,6 +254,47 @@ ggplot(energy_data2, aes(x=Month, y=energy_data2[,4])) +
 ### Q5
 Plot ACF and PACF for the detrended series and compare with the plots from Q1. Did the plots change? How?
 
+
+Looking at the plots comparing PACF and ACF of the trend and detrended series, there isn't that much of a dramatic change between the ACFs and PACFs. The only ones that appear to be different between the trend and detrended series are renewables ACF (the detrended renewables ACF shows a little seasonality compared to trend renewable ACF), biomass ACF (the detrended ACF shos a little less of a gradual decline compared to the trend ACF, potentially some seasonality), biomass PACF (lag 12 on the detrended series looks barely a little higher unless my eyesight sucks), and renewables PACF (a few of the lags on the detrended PACF looks taller compared to the trend PACF which again unless my eyesight sucks).
+
+
+
+```{r detrend ACF PACF, echo=FALSE, warning=FALSE, message=FALSE}
+#create time series of detrended data
+ts_detrend_biomass<- ts(detrend_biomass_data, start = 1973, frequency = 12)
+ts_detrend_renewable<- ts(detrend_renewables_data, start = 1973, frequency = 12)
+ts_detrend_hydro<- ts(detrend_hydro_data, start = 1973, frequency = 12)
+
+#Comparing ACF and PACF of each series before and after detrending
+    
+par(mfrow=c(3,2)) #Comparing ACFs
+   
+  Acf(ts_detrend_biomass,lag.max=40,main="Biomass Detrend ACF") 
+  Acf(ts_energy[,1],lag.max=40,main="Biomass ACF")
+  
+  Acf(ts_detrend_renewable,lag.max=40,main="Renewable Detrend ACF") 
+  Acf(ts_energy[,2],lag.max=40,main="Renewable ACF")
+  
+  Acf(ts_detrend_hydro,lag.max=40,main="Hydro Detrend ACF") 
+  Acf(ts_energy[,3],lag.max=40,main="Hydro ACF")
+  
+#Comparing PACFs
+  
+par(mfrow=c(3,2)) #Comparing PACFs
+   
+  Pacf(ts_detrend_biomass,lag.max=40,main="Biomass Detrend PACF") 
+  Pacf(ts_energy[,1],lag.max=40,main="Biomass PACF")
+  
+  Pacf(ts_detrend_renewable,lag.max=40,main="Renewable Detrend PACF") 
+  Pacf(ts_energy[,2],lag.max=40,main="Renewable PACF")
+  
+  Pacf(ts_detrend_hydro,lag.max=40,main="Hydro Detrend PACF") 
+  Pacf(ts_energy[,3],lag.max=40,main="Hydro PACF")
+
+
+```
+
+
 ## Seasonal Component
 
 Set aside the detrended series and consider the original series again from Q1 to answer Q6 to Q8.
@@ -233,15 +302,79 @@ Set aside the detrended series and consider the original series again from Q1 to
 ### Q6
 Do the series seem to have a seasonal trend? Which serie/series? Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) to this/these time series. Ask R to print the summary of the regression. Interpret the regression output. Save the regression coefficients for further analysis.
 
-```{r}
 
+
+The series that has an obvious seasonal trend is hydroelectric based on plots and graphs. During mostly non-summer months, there appears to be more hydroelectric resources available as the regression coefficients are higher as there's more precipitation around this time. Late summer to fall there appears to be less hydroelectric sources available given these months are dryer. 
+
+
+```{r seasonal, echo=FALSE, warning=FALSE}
+#create the seasonal dummies
+dummies <- seasonaldummy(ts_energy[,3])  
+
+#Then fit a linear model to the seasonal dummies
+seas_means_model=lm(energy_data2[,4]~dummies)
+summary(seas_means_model)
+
+#Store regression coefficients
+beta_int=seas_means_model$coefficients[1]
+beta_coeff=seas_means_model$coefficients[2:12]
 
 ```
 
+
 ### Q7
 Use the regression coefficients from Q6 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
+
+
+Comparing the seasonal and deseasoned data of hydroelectric power, the deseasoned data shows some values that could potentially be outliers that the seasonal data doesn't reveal. In addition, the mean appears to be at y=0. 
+
+
+```{r deseasoned, echo=FALSE, warning=FALSE}
+#compute seasonal component
+energy_seas_comp=array(0,nobs)
+for(i in 1:nobs){
+  energy_seas_comp[i]=(beta_int+beta_coeff%*%dummies[i,])
+}
+
+#Plotting seasonality
+ggplot(energy_data2, aes(x=Month, y=Hydroelectric_Power_Consumption)) +
+            geom_line(color="blue") +
+            ylab("Hydropower Consumption in Trillion Btu") +
+            ggtitle("Seasonality in Hydropower generation") +
+            geom_line(aes(y=energy_seas_comp), col="red")
+
+
+#Removing seasonal component
+deseason_energy_data <- energy_data2[,(4)]-energy_seas_comp
+
+#Understanding what we did
+ggplot(energy_data2, aes(x=Month, y=Hydroelectric_Power_Consumption)) +
+            geom_line(color="blue") +
+            ylab("Hydropower Consumption in Trillion Btu") +
+            ggtitle("Hydropower Consumption with and without seasonality") +
+            geom_line(aes(y=deseason_energy_data), col="green")
+
+
+```
 
 ### Q8
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. Did the plots change? How?
 
 
+Seasonality for hydroelectric appears to be much more controlled for comparing the deaseasoned ACF with the seasonal ACF. Regarding the PACFs, the deseasoned hydroelectric graph shows shorter lags compared to the seasonal PACF.
+
+
+```{r deseasoned ACF PACF, echo=FALSE, warning=FALSE}
+ts_deseason_energy<- ts((deseason_energy_data), start = 1973, frequency = 12)
+
+
+par(mfrow=c(2,2))
+Acf(ts_deseason_energy,lag.max=40,main="Deseasoned Hydro ACF")
+Acf(ts_energy[,3],lag.max=40,main="Hydro ACF with seasonality")
+
+pacf(ts_deseason_energy,lag.max=40,main="Deseasoned Hydro PACF")
+Pacf(ts_energy[,3],lag.max=40,main="Hydro PACF with seasonality")
+
+
+
+```
