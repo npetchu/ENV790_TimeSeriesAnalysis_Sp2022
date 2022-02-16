@@ -203,6 +203,7 @@ Acf(ts_renewables,lag.max=40, ylim=c(-0.5,1),main="ACF Differenced")
 Compute the Seasonal Mann-Kendall and ADF Test for the original "Total Renewable Energy Production" series. Ask R to print the results. Interpret the results for both test. Whats the conclusion from the Seasonal Mann Kendall test? What's the conclusion for the ADF test? Do they match what you observed in Q2? Recall that having a unit root means the series has a stochastic trend. And when a series has stochastic trend we need to use a different procedure to remove the trend.
 
 
+
 According to the Seasonal Mann-Kendall test, the p-value being below my self-declared critical value of 0.05 means that we can reject the null hypothesis (the data is stationary) and embrace the alternative hypothesis. This means that there is a deterministic trend within the data.
 
 According to the ADF Test, I cannot reject the null hypothesis that my series is non-stationary since my p-value is above the critical value of 0.05 (it's 0.8161). This implies that there's a unit root, thus the series does have a stochastic trend. This does match Q2's plot of the regular data series (the blue line that hasn't been detrended).
