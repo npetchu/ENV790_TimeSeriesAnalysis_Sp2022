@@ -10,7 +10,7 @@ editor_options:
   
 ## Directions
   
-  You should open the .rmd file corresponding to this assignment on RStudio. The file is available on our class repository on Github. And to do so you will need to fork our repository and link it to your RStudio.  
+You should open the .rmd file corresponding to this assignment on RStudio. The file is available on our class repository on Github. And to do so you will need to fork our repository and link it to your RStudio.  
 
 Once you have the project open the first thing you will do is change "Student Name" on line 3 with your name. 
 Then you will start working through the assignment by  **creating code and output** that answer each question. Be sure to use this assignment document. Your report should contain the answer to each question and any plots/tables you obtained (when applicable).
@@ -19,9 +19,16 @@ When you have completed the assignment, **Knit** the text and code into a single
 
 R packages needed for this assignment: "xlsx" or "readxl", "ggplot2", "forecast","tseries", and "Kendall". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.\\
 
-```{r}
+```{r load packages, include=FALSE}
 #Load/install required package here
-
+library(readxl)
+library(ggplot2)
+library(forecast)
+library(tseries)
+library(Kendall)
+library(base)
+library(dplyr)
+library(tidyr)
 
 ```
 
@@ -30,9 +37,30 @@ R packages needed for this assignment: "xlsx" or "readxl", "ggplot2", "forecast"
 Consider the same data you used for A3 from the spreadsheet "Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx". The data comes from the US Energy Information and Administration and corresponds to the January 2021 Monthly Energy Review. For this assignment you will work only with the column "Total Renewable Energy Production". 
 
 
-```{r}
+```{r import data, include=FALSE}
 #Importing data set - using xlsx package
+energy_data <- read_xlsx(path="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",skip = 12, sheet="Monthly Data",col_names=FALSE) 
+energy_data
 
+```
+
+```{r create data frame, include=FALSE}
+
+colnames(energy_data)=c("Month","Total_Biomass_Energy_Production","Total_Renewable_Energy_Production", "Hydroelectric_Power_Consumption")
+head(energy_data)
+
+nobs <- nrow(energy_data) 
+sapply(energy_data, class)
+
+#create data frame with date and 3 energy types
+energy_data2 <- energy_data[, c(1,4:6)] %>% as.data.frame()
+energy_data2
+sapply(energy_data2, class)
+
+#change column names
+names(energy_data2) <- c('Month','Total_Biomass_Energy_Production','Total_Renewable_Energy_Production','Hydroelectric_Power_Consumption')
+head(energy_data2)
+sapply(energy_data2,class)
 
 ```
 
@@ -48,7 +76,16 @@ Difference the "Total Renewable Energy Production" series using function diff().
 
 Try differencing at lag 1 only once, i.e., make `lag=1` and `differences=1`. Plot the differenced series Do the series still seem to have trend?
 
-```{r}
+
+The plot doesn't appear to still have a trend after differencing. 
+
+```{r differencing, echo=FALSE}
+vector_renewables<-energy_data2$Total_Renewable_Energy_Production
+vector_renewables_diff<-diff(vector_renewables, lag=1, differences=1)
+
+
+ts_renewables<-ts(vector_renewables_diff,start=c(1973,1),end=c(2021,9),frequency=12)
+plot(ts_renewables)
 
 ```
 
@@ -58,15 +95,62 @@ Now let's compare the differenced series with the detrended series you calculate
 
 Copy and paste part of your code for A3 where you compute regression for Total Energy Production and the detrended Total Energy Production
 
-```{r}
+
+Comparing the plots from Q1 to Q2, the detrended series in green compared to the differenced series from Q1 still displays more of a trend. This could be because using a linear regression isn't the best way to detrend this series as likely the trend isn't deterministic versus stochastic. If the series is stochastic, difference-stationarity is obtained by differencing the series. This was done in the plot in Q1, which removed more trend than the plot in Q2. 
+
+
+```{r detrend renewables, echo=FALSE, warning=FALSE, message=FALSE}
+#Create vector t
+t <- c(1:nobs)
+
+#Fit a linear trend to TS
+lm_model2=lm(Total_Renewable_Energy_Production~t,data=energy_data2)
+summary(lm_model2)
+beta02=as.numeric(lm_model2$coefficients[1])  #first coefficient is the intercept term or beta0
+beta12=as.numeric(lm_model2$coefficients[2])  #second coefficient is the slope or beta1
+
+#remove the trend from series
+detrend_renewables_data <- energy_data2[,3]-(beta02+beta12*t)
+
+#Understanding what we did
+ggplot(energy_data2, aes(x=Month, y=Total_Renewable_Energy_Production)) +
+            geom_line(color="blue") +
+            ylab(paste0("Trillion Btus")) +
+            geom_abline(intercept = beta0, slope = beta1, color="red") +
+            geom_smooth(color="red",method="lm") +
+            geom_line(aes(y=detrend_renewables_data), col="green") +
+            geom_smooth(aes(y=detrend_renewables_data),color="orange",method="lm") 
+
 
 ```
 
 ### Q3
 Create a data frame with 4 columns: month, original series, detrended by Regression Series and differenced series. Make sure you properly name all columns. Also note that the differenced series will have only 584 rows because you loose the first observation when differencing. Therefore, you need to remove the first observations for the original series and the detrended by regression series to build the new data frame.
 
-```{r}
-#Data frame - remember to note include January 1973
+```{r create dataframe, include=FALSE}
+#Data frame - remember to not include January 1973
+
+#month + original data minus row 1
+orig_renewables_df<-energy_data2[-1,c(1,3)] %>% as.data.frame()
+orig_renewables_df
+
+#detrended data minus row 1
+detrend_df<-as.data.frame(detrend_renewables_data)
+detrend_df
+detrend_df=detrend_df[-1,]
+detrend_df
+
+#differenced data
+vector_diff_df<-as.data.frame(vector_renewables_diff)
+vector_diff_df
+
+#smack it all together
+all_data_df<-data.frame(orig_renewables_df, detrend_df, vector_diff_df)
+all_data_df
+
+#rename columns
+names(all_data_df)<-c('Month','Original_Data','Detrended_Data','Differenced_Data')
+all_data_df
 
 
 ```
@@ -74,8 +158,23 @@ Create a data frame with 4 columns: month, original series, detrended by Regress
 ### Q4
 Using ggplot() create a line plot that shows the three series together. Make sure you add a legend to the plot.
 
-```{r}
+```{r ggplot, echo=FALSE}
 #Use ggplot
+
+ggplot(all_data_df, aes(x=Month, y=all_data_df[,2])) +
+            geom_line(aes(color="steelblue2")) +
+            geom_line(aes(y=all_data_df[,3], color="turquoise1")) +
+            geom_line(aes(y=all_data_df[,4], color="seagreen2")) +
+            scale_color_identity(name="Data Type",
+                                 breaks=c("steelblue2","turquoise1","seagreen2"),
+                                 labels=c("Original Data","Detrended Data","Differenced Data"),
+                                 guide = "legend") +
+            labs(title="Renewable Energy Series",
+                 x="Month",
+                 y="Trillions of Btus",
+                 ) 
+
+            
 
 ```
 
@@ -83,8 +182,19 @@ Using ggplot() create a line plot that shows the three series together. Make sur
 ### Q5
 Plot the ACF for the three series and compare the plots. Add the argument `ylim=c(-0.5,1)` to the Acf() function to make sure all three y axis have the same limits. Which method do you think was more efficient in eliminating the trend? The linear regression or differencing?
 
-```{r}
-#Compare ACFs
+
+Looking at the ACFs, the differencing was the best at eliminating the trend as both the original and detrended ACFs we can see the lags decrease while the differenced ACF . The detrended ACF also displays seasonality.
+
+
+```{r ACFs, echo=FALSE}
+ts_detrend<-ts(detrend_renewables_data,start=c(1973,1),end=c(2021,9),frequency=12)
+ts_original<-ts(energy_data2$Total_Renewable_Energy_Production,start=c(1973,1),end=c(2021,9),frequency=12)
+
+par(mfrow=c(2,2))
+Acf(ts_original,lag.max = 40, ylim=c(-0.5,1),main="ACF Original")
+Acf(ts_detrend,lag.max = 40, ylim=c(-0.5,1),main="ACF Detrended")
+Acf(ts_renewables,lag.max=40, ylim=c(-0.5,1),main="ACF Differenced")
+
 
 ```
 
@@ -92,7 +202,15 @@ Plot the ACF for the three series and compare the plots. Add the argument `ylim=
 ### Q6
 Compute the Seasonal Mann-Kendall and ADF Test for the original "Total Renewable Energy Production" series. Ask R to print the results. Interpret the results for both test. Whats the conclusion from the Seasonal Mann Kendall test? What's the conclusion for the ADF test? Do they match what you observed in Q2? Recall that having a unit root means the series has a stochastic trend. And when a series has stochastic trend we need to use a different procedure to remove the trend.
 
-```{r}
+
+According to the Seasonal Mann-Kendall test, the p-value being below my self-declared critical value of 0.05 means that we can reject the null hypothesis (the data is stationary) and embrace the alternative hypothesis. This means that there is a deterministic trend within the data.
+
+According to the ADF Test, I cannot reject the null hypothesis that my series is non-stationary since my p-value is above the critical value of 0.05 (it's 0.8161). This implies that there's a unit root, thus the series does have a stochastic trend. This does match Q2's plot of the regular data series (the blue line that hasn't been detrended).
+
+
+```{r tests, echo=FALSE}
+SeasonalMannKendall(ts_original)
+adf.test(ts_original)
 
 ```
 
@@ -106,7 +224,7 @@ Aggregate the original "Total Renewable Energy Production" series by year. You c
 
 ### Q8
 
-Apply the Mann Kendal, Spearman correlation rank test and ADF. Are the results from the test in agreement with the test results for the non-aggregated series, i.e., results for Q6?
+Apply the Mann Kendall, Spearman correlation rank test and ADF. Are the results from the test in agreement with the test results for the non-aggregated series, i.e., results for Q6?
 
 ```{r}
 
