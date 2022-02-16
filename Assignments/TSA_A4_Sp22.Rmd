@@ -183,7 +183,7 @@ ggplot(all_data_df, aes(x=Month, y=all_data_df[,2])) +
 Plot the ACF for the three series and compare the plots. Add the argument `ylim=c(-0.5,1)` to the Acf() function to make sure all three y axis have the same limits. Which method do you think was more efficient in eliminating the trend? The linear regression or differencing?
 
 
-Looking at the ACFs, the differencing was the best at eliminating the trend as both the original and detrended ACFs we can see the lags decrease while the differenced ACF . The detrended ACF also displays seasonality.
+Looking at the ACFs, the differencing was the best at eliminating the trend as both the original and detrended ACFs we can see the lags decrease while the differenced ACF. The detrended ACF also displays seasonality. The differenced data also has a slope that's much closer to zero. 
 
 
 ```{r ACFs, echo=FALSE}
