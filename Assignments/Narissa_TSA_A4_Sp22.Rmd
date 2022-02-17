@@ -29,6 +29,7 @@ library(Kendall)
 library(base)
 library(dplyr)
 library(tidyr)
+library(lubridate)
 
 ```
 
@@ -116,7 +117,6 @@ detrend_renewables_data <- energy_data2[,3]-(beta02+beta12*t)
 ggplot(energy_data2, aes(x=Month, y=Total_Renewable_Energy_Production)) +
             geom_line(color="blue") +
             ylab(paste0("Trillion Btus")) +
-            geom_abline(intercept = beta0, slope = beta1, color="red") +
             geom_smooth(color="red",method="lm") +
             geom_line(aes(y=detrend_renewables_data), col="green") +
             geom_smooth(aes(y=detrend_renewables_data),color="orange",method="lm") 
@@ -183,7 +183,7 @@ ggplot(all_data_df, aes(x=Month, y=all_data_df[,2])) +
 Plot the ACF for the three series and compare the plots. Add the argument `ylim=c(-0.5,1)` to the Acf() function to make sure all three y axis have the same limits. Which method do you think was more efficient in eliminating the trend? The linear regression or differencing?
 
 
-Looking at the ACFs, the differencing was the best at eliminating the trend as both the original and detrended ACFs we can see the lags decrease while the differenced ACF. The detrended ACF also displays seasonality. The differenced data also has a slope that's much closer to zero. 
+Looking at the ACFs, the differencing was the best at eliminating the trend as both the original and detrended ACFs we can see the lags decrease while the differenced ACF we don't see a trend. The detrended ACF also displays seasonality while the ACF of the differenced data doesn't show seasonality. In Q4, we can also see that the differenced data's mean is closest to zero compared to the original and detrended data.
 
 
 ```{r ACFs, echo=FALSE}
@@ -204,9 +204,9 @@ Compute the Seasonal Mann-Kendall and ADF Test for the original "Total Renewable
 
 
 
-According to the Seasonal Mann-Kendall test, the p-value being below my self-declared critical value of 0.05 means that we can reject the null hypothesis (the data is stationary) and embrace the alternative hypothesis. This means that there is a deterministic trend within the data.
+According to the Seasonal Mann-Kendall test, the p-value being way below my self-declared critical value of 0.05 means that we can reject the null hypothesis and embrace the alternative hypothesis. This means that there is a trend within the data.
 
-According to the ADF Test, I cannot reject the null hypothesis that my series is non-stationary since my p-value is above the critical value of 0.05 (it's 0.8161). This implies that there's a unit root, thus the series does have a stochastic trend. This does match Q2's plot of the regular data series (the blue line that hasn't been detrended).
+According to the ADF Test, I cannot reject the null hypothesis since my p-value is above the critical value of 0.05 (it's 0.8161). This implies that there's a unit root, thus the series does have a stochastic trend. This does match Q2's plot of the regular data series (the blue line that hasn't been detrended).
 
 
 ```{r tests, echo=FALSE}
@@ -219,7 +219,27 @@ adf.test(ts_original)
 
 Aggregate the original "Total Renewable Energy Production" series by year. You can use the same procedure we used in class. Store series in a matrix where rows represent months and columns represent years. And then take the columns mean using function colMeans(). Recall the goal is the remove the seasonal variation from the series to check for trend. 
 
-```{r}
+```{r group data yearly}
+#Group data in yearly steps instances
+
+orig_renewables_drop2021_df<-orig_renewables_df[1:575,]
+tail(orig_renewables_drop2021_df)
+
+ts_renewables_drop2021<- as.ts(orig_renewables_drop2021_df[,2])
+head(ts_renewables_drop2021)
+
+ts_renewables_matrix<-matrix(ts_renewables_drop2021,byrow=FALSE,nrow=12)
+renewable_orig_yearly <- colMeans(ts_renewables_matrix)
+renewable_orig_yearly
+
+
+renewables_year <- c(year(first(orig_renewables_drop2021_df[,1])):year(last(orig_renewables_drop2021_df[,1])))
+
+renewable_new_yearly <- data.frame(renewables_year, renewable_orig_yearly)
+
+ggplot(renewable_new_yearly, aes(x=renewables_year, y=renewable_new_yearly[,2])) +
+            geom_line(color="blue") +
+            geom_smooth(color="red",method="lm") 
 
 ```
 
@@ -227,7 +247,46 @@ Aggregate the original "Total Renewable Energy Production" series by year. You c
 
 Apply the Mann Kendall, Spearman correlation rank test and ADF. Are the results from the test in agreement with the test results for the non-aggregated series, i.e., results for Q6?
 
-```{r}
+
+
+Comparing the Seasonal Mann-Kendall of the non-aggregated series (Q6) and aggregated series are in agreement as in both cases, we reject the null hypothesis (that the series is stationary) and we embrace the alternative hypothesis that the series follows a trend. 
+
+The Spearman Correlation coefficient is clearly above 0 (it's 0.863439) and with a very low p-value below 0.05, which implies that true rho isn't equal to zero or that there's a trend.
+
+The ADF results of the non-aggregated (Q6) and aggregated series are in agreement as in both cases, we accept the null hypothesis as the p-value is above 0.05. This means that the series contains a unit root, thus the series does have a trend. 
+
+
+```{r Mann Kendall, echo=FALSE}
+SMKtest_renewables <- SeasonalMannKendall(ts_original)
+print("Results for Seasonal Mann Kendall /n")
+print(summary(SMKtest_renewables))
+
+#Use yearly date to run Mann Kendall
+print("Results of Mann Kendall on average yearly series")
+print(summary(MannKendall(renewable_orig_yearly)))
+
+```
+
+```{r Spearman, echo=FALSE}
+#Deterministic trend with Spearman Correlation Test
+print("Results from Spearman Correlation")
+sp_rho=cor(renewable_orig_yearly,renewables_year,method="spearman")
+print(sp_rho)
+
+#with cor.test you can get test statistics
+sp_rho=cor.test(renewable_orig_yearly,renewables_year,method="spearman")
+print(sp_rho)
+
+```
+
+```{r ADF, echo=FALSE}
+#Null hypothesis is that data has a unit root
+print("Results for ADF test/n")
+print(adf.test(ts_original,alternative = "stationary"))
+
+#Now let's try the yearly data
+print("Results for ADF test on yearly data/n")
+print(adf.test(renewable_orig_yearly, alternative = "stationary"))
 
 ```
 
