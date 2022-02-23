@@ -170,6 +170,8 @@ From now on let's focus on the temperature series only.
 
 ## Adding explanantory variables to the model
 
+External variable that can explain or correlate with the trend. What we've done is based on self historic observations. Only looking at past data. Could be that we have outside exogenous variable that's related to the variable we're trying to estimate. By adding it, can make better estimations. When we add variables to my model, help me understand variability in my time series. Easy way to add external regressor is xreg and plug in exogenous variable into xreg. Make sure xreg variable has same number of rows of y variable and that they are aligned in time. If get close AIC with our without temperature, don't need temperature as don't want to add more uncertainty. ex. if want rainwall, see how temperature is implicated too. 
+
 The ARIMA family has another variation called ARIMAX that allows you to add exogenous variables to you ARIMA model. The argument on the auto.arima() that allows you to add an external regressor is the `xreg=`. For example, could rainfall explain some of the variability in temperature? 
 
 ```{r}

@@ -144,7 +144,11 @@ par(mfrow=c(1,3))
 Pacf(df_residential_full$Residential,lag.max=40,main="Residential",ylim=c(-.5,1))
 Pacf(df_residential_full$NonSeasonalResidential,lag.max=40,main="Non Sesonal Residential",ylim=c(-.5,1))
 Pacf(df_residential_full$ResidentialDiff,lag.max=40,main="Diff NonSeas Residential",ylim=c(-.5,1))
+
+#consider starting with ARMA (1,1,1) by looking at ACF and PACF
 ```
+
+
 
 ## Modeling the seasonal part
 
@@ -152,13 +156,17 @@ I will not cover the hypothesis test associated with deterministic and stochasti
 
 ```{r}
 # Find out how many time we need to difference
+
+#nsdiff check for seasonal differencing needed, difference on seasonal lag, diff observations by seasonal lag ex. once at lag 12 in this one
+
 ns_diff <- nsdiffs(ts_electricity_price[,"Residential"])
 cat("Number of seasonal differencing needed: ",ns_diff)
 
 #Lets difference the series once at lag 12 to remove the seasonal trend.
-residential_price_seas_diff <- diff(ts_electricity_price[,"Residential"],lag=12, differences=1)
+residential_price_seas_diff <- diff(ts_electricity_price[,"Residential"],lag=12, differences=1) 
 residential_price_trend_diff <- diff(ts_electricity_price[,"Residential"],lag =1, differences=1) #diff done on orig series
-residential_price_both_diff <- diff(residential_price_trend_diff,lag =12, differences=1)
+residential_price_both_diff <- diff(residential_price_trend_diff,lag =12, differences=1) #lag 1 diff first then lag 12 diff next
+
 
 #Check autocorrelation plots for differenced series
 #Comparing ACFs
@@ -166,7 +174,7 @@ par(mfrow=c(1,4))
 Acf(ts_electricity_price[,"Residential"],lag.max=40,main="Residential",ylim=c(-1,1))
 Acf(residential_price_seas_diff,lag.max=60,main="Seasonal-Differenced Residential",ylim=c(-1,1))
 Acf(residential_price_trend_diff,lag.max=60,main="Trend-Differenced Residential",ylim=c(-1,1))
-Acf(residential_price_both_diff,lag.max=60,main="Twice-Differenced Residential",ylim=c(-1,1))
+Acf(residential_price_both_diff,lag.max=60,main="Twice-Differenced Residential",ylim=c(-1,1)) 
 
 #Comparing PACFs
 par(mfrow=c(1,4))
@@ -180,6 +188,19 @@ par(mfrow=c(1,2))
 Acf(residential_price_both_diff,lag.max=60,main="Twice-Differenced Residential",ylim=c(-1,1))
 Pacf(residential_price_both_diff,lag.max=60,main="Twice-Differenced Residential",ylim=c(-1,1))
 
+#additional notes
+
+#for lower case p and q, we would choose 1,1 
+
+#for seasonal lags, we have one spike at 12 ACF, multiple spikes for PACF, think this seasonal component is MA since one spike at ACF since negative and 2 spikes at PACF
+   #if MA, P=0, Q=1
+#one spike at ACF, previous observations at seasonal lag important at first year, what happened before that doesn't matter, so we have short memory, just one spike at ACF and few spikes at PACF
+
+#if long memory, we have AR model
+
+#compare AIC for seasonality removed, AIC for dataset that has seasonality there, can't compare AIC since not based on same initial variable, not based on same initial variable since one is ARIMA (not handle seasonality) and one is SARIMA (handle seasonality), not fair to compare ARIMA errors before you put back seasonality, always need to compare consider same base dataset
+
+#goal is to manipulate PDQ to bring ACF/PACF within error bars and then decrease AIC
 
 ```
 
@@ -194,7 +215,10 @@ Now let's look at seasonal lags only (12,24,36,48). ACF has one spike at 12 and 
 ```{r}
 
 SARIMA_manual <- Arima(ts_electricity_price[,"Residential"],order=c(1,1,1),seasonal=c(0,1,1),include.drift=FALSE)
-print(SARIMA_manual)
+print(SARIMA_manual) 
+#just referring to original column, identify original order before, order with respect to non-seasonal part
+#for seasonal, order is 011
+#do drift= false because we are differencing twice, so more likely mean is now zero, so don't want to include any drift
 
 par(mfrow=c(1,3))
 ts.plot(SARIMA_manual$residuals)
@@ -215,6 +239,7 @@ par(mfrow=c(1,3))
 ts.plot(SARIMA_autofit$residuals)
 Acf(SARIMA_autofit$residuals,lag.max=40)
 Pacf(SARIMA_autofit$residuals,lag.max=40)
+
 
 
 ```
@@ -238,4 +263,8 @@ Pacf(ARIMA_autofit$residuals,lag.max=40)
 ```
 
 ## Discussion: Which one to do? ARIMA or SARIMA?
+
+Easier to remove seasonal component since have 3 parameters to estimate, but is this the best way? No since SARIMA allows for more variability for the seasonal trend. Allow for more possibility for seasonal component. Non seasonal ARIMA, assume seasonal component is constant over time. Could be that it is and SARIMA and ARIMA lead to similar results but if we can model it and we know how to identify other 3 parameters is the best way to do it. 
+
+auto.arima will give the lowest AIC and we are looking at plots to estimate the order of the model.. but situations where auto.arima would not converge and find best model.. reasons this could happen by increasing ARMA, not changing AIC too much so never leave the loop.. important to know about model estimation so can reduce possibilities of auto.arima function
 
