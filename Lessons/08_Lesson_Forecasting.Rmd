@@ -126,7 +126,7 @@ These three function take a few main arguments:
 **h** forecasting horizon, i.e., how many steps ahead do you want to forecast
 **level** Confidence level for prediction intervals
 
-
+In-class notes: Trend is the problem, not seasonality. Arithmetic mean doesn't consider trend.
 
 ```{r}
 #Model 1: Arithmetic mean on original data
@@ -164,7 +164,7 @@ The simple averaging techniques we will explore are the moving average and the e
 The simple exponential smoothing can be obtained with the ses() function also from package `forecast`. The main arguments function ses() will take are:
 
 **y** ts object containing data needed to be forecasted
-**alpha** the smoothing constant. If you don't specify, R will find the best alpha for you. 
+**alpha** the smoothing constant. If you don't specify, R will find the best alpha for you.  (Note: multiplies diff between forecast and value that was actually observed)
 **h** forecasting horizon, i.e., how many steps ahead do you want to forecast
 **holdout** If TRUE, the last **h** observations are taken from the end of the data. One reason to holdout some data is to check model performance. We will talk about that on M9.
 **silent** if FALSE, no output will be generated
@@ -172,6 +172,12 @@ The simple exponential smoothing can be obtained with the ses() function also fr
 
 
 We will try these models on the original dataset and the deaseason electricity price.
+
+SMA will do a better job capturing the trend. Selected 36 to make a bigger forecasting picture. For 
+
+Model 8, doesn't' capture seasonal data and now alpha is 0.9999 and we're being aggressive with our information based on the error. Only work for historical data. Alpha is high because we're looking at the seasonal component. Trying to build aggressive emodel that adapts faster. Seasonal component push alpha to be higher, but still have trend represented but not seasonality.
+
+Know some models aren't great, but how much better can we make it? Worth making a model to compare with the model we want to actually create. 
 
 ```{r}
 # Model 5: Simple moving average on deseasonal data
