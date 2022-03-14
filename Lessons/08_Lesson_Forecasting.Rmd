@@ -181,7 +181,7 @@ Know some models aren't great, but how much better can we make it? Worth making 
 
 ```{r}
 # Model 5: Simple moving average on deseasonal data
-SMA_deseas_fit <- sma(y = deseasonal_allsectors_price, h = 36, holdout = FALSE, silent = FALSE) #order=2
+SMA_deseas_fit <- smooth::sma(y = deseasonal_allsectors_price, h = 36, holdout = FALSE, silent = FALSE) #,order=2)
 summary(SMA_deseas_fit)
 
 # Model 6: Simple moving average on original data

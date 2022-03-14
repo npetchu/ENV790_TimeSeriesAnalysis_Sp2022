@@ -174,7 +174,13 @@ par(mfrow=c(1,4))
 Acf(ts_electricity_price[,"Residential"],lag.max=40,main="Residential",ylim=c(-1,1))
 Acf(residential_price_seas_diff,lag.max=60,main="Seasonal-Differenced Residential",ylim=c(-1,1))
 Acf(residential_price_trend_diff,lag.max=60,main="Trend-Differenced Residential",ylim=c(-1,1))
+<<<<<<< HEAD
 Acf(residential_price_both_diff,lag.max=60,main="Twice-Differenced Residential",ylim=c(-1,1)) 
+=======
+
+par(mfrow=c(1,1))
+Acf(residential_price_both_diff,lag.max=60,main="Twice-Differenced Residential",ylim=c(-1,1))
+>>>>>>> 04e0ccae56a145bdff9489edfda8bb12e6c218de
 
 #Comparing PACFs
 par(mfrow=c(1,4))
