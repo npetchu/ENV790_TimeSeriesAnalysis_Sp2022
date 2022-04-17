@@ -153,7 +153,7 @@ act_power_daily <- act_power_hourly %>%
   group_by(Date,Year,Month,Day) %>% # here we left column with hour out to calculate daily mean
   summarise( daily_mean_active_power = mean(hourly_mean_active_power)) 
 
-ggplot(act_power_daily, aes(x=Date,y=daily_mean_active_power)) +
+ggplot(act_power_daily, aes(x=date,y=daily_mean_active_power)) +
   geom_line() +
   ylab("Average Daily Household Active Power")
 
